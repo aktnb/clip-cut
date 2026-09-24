@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace ClipCut;
+namespace ClipCut.Views;
 
 public partial class MainWindow : Window
 {
