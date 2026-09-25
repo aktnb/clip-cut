@@ -2,8 +2,61 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:ClipCut.ViewModels"
+        xmlns:models="using:ClipCut.Models"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ClipCut.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
         Title="ClipCut">
-    Welcome to Avalonia!
+
+    <StackPanel>
+        <TextBlock Text="Input file" />
+        <TextBox Text="{Binding InputFilePath}" />
+        <Button Content="Browse" Click="BrowseButton_OnClick" />
+
+        <TextBlock Text="Output file" />
+        <TextBox Text="{Binding OutputFilePath}" />
+
+        <TextBox
+            Text="{Binding StartTime}"
+            PlaceholderText="00:00:00.000" />
+
+        <TextBox
+            Text="{Binding EndTime}"
+            PlaceholderText="00:00:00.000" />
+
+        <Button
+            Content="Add to Queue"
+            Command="{Binding AddJobCommand}" />
+
+        <TextBlock
+            Text="{Binding ValidationError}"
+            IsVisible="{Binding ValidationError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <ListBox ItemsSource="{Binding Jobs}">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="models:CutJob">
+                    <Grid ColumnDefinitions="*,Auto">
+
+                        <StackPanel>
+                            <TextBlock Text="{Binding InputFilePath}" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding Start}" />
+                                <TextBlock Text="→" />
+                                <TextBlock Text="{Binding End}" />
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding OutputFilePath}" />
+
+                            <Button
+                                Content="Remove"
+                                Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext)?.RemoveJobCommand}"
+                                CommandParameter="{Binding}" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </StackPanel>
 </Window>
