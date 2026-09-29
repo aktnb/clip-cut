@@ -19,11 +19,11 @@
 
         <TextBox
             Text="{Binding StartTime}"
-            PlaceholderText="00:00:00.000" />
+            PlaceholderText="00:00:00[.fff]" />
 
         <TextBox
             Text="{Binding EndTime}"
-            PlaceholderText="00:00:00.000" />
+            PlaceholderText="00:00:00[.fff]" />
 
         <Button
             Content="Add to Queue"
@@ -48,6 +48,8 @@
                             </StackPanel>
 
                             <TextBlock Text="{Binding OutputFilePath}" />
+
+                            <TextBlock Text="{Binding Status}" />
 
                             <Button
                                 Content="Remove"

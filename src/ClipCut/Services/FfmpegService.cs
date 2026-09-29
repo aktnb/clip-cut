@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ClipCut.Models;
@@ -9,6 +10,15 @@ namespace ClipCut.Services;
 public class FfmpegService(string ffmpegPath) : IFfmpegService
 {
     public async Task CutAsync(CutJob job, CancellationToken cancellationToken = default)
+    {
+        var startInfo = BuildStartInfo(job);
+
+        Console.WriteLine(BuildCommand(startInfo));
+
+        await Task.Delay(1000, cancellationToken);
+    }
+
+    public ProcessStartInfo BuildStartInfo(CutJob job)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -22,13 +32,13 @@ public class FfmpegService(string ffmpegPath) : IFfmpegService
         if (job.Start is not null)
         {
             startInfo.ArgumentList.Add("-ss");
-            startInfo.ArgumentList.Add(job.Start.Value.ToString(@"hh¥:mm¥:ss¥.fff"));
+            startInfo.ArgumentList.Add(job.Start.Value.ToString(@"hh\:mm\:ss\.fff"));
         }
 
         if (job.End is not null)
         {
             startInfo.ArgumentList.Add("-to");
-            startInfo.ArgumentList.Add(job.End.Value.ToString(@"hh¥:mm¥:ss¥.fff"));
+            startInfo.ArgumentList.Add(job.End.Value.ToString(@"hh\:mm\:ss\.fff"));
         }
 
         startInfo.ArgumentList.Add("-i");
@@ -39,18 +49,21 @@ public class FfmpegService(string ffmpegPath) : IFfmpegService
 
         startInfo.ArgumentList.Add(job.OutputFilePath);
 
-        using var process = new Process();
-        process.StartInfo = startInfo;
+        return startInfo;
+    }
 
-        process.Start();
+    private string BuildCommand(ProcessStartInfo startInfo)
+    {
+        return string.Join(
+            " ",
+            new[] { startInfo.FileName }
+                .Concat(startInfo.ArgumentList.Select(Escape)));
+    }
 
-        await process.WaitForExitAsync(cancellationToken);
-
-        if (process.ExitCode != 0)
-        {
-            var error = await process.StandardError.ReadToEndAsync(cancellationToken);
-
-            throw new InvalidOperationException($"FFmpeg failed with exit code {process.ExitCode}: {error}");
-        }
+    private static string Escape(string arg)
+    {
+        return arg.Contains(' ')
+            ? $"\"{arg}\""
+            : arg;
     }
 }

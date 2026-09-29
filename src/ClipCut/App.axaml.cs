@@ -22,7 +22,8 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        services.AddSingleton<IFfmpegService, FfmpegService>();
+        services.AddSingleton<IFfmpegService>(_ => new FfmpegService("ffmpeg"));
+        services.AddSingleton<IJobService, JobService>();
         services.AddTransient<MainWindowViewModel>();
 
         Services = services.BuildServiceProvider();

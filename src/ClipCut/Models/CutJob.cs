@@ -12,6 +12,7 @@ public partial class CutJob : ObservableObject
     public TimeSpan? End { get; init; }
 
     [ObservableProperty] public partial JobStatus Status { get; set; } = JobStatus.Pending;
+    [ObservableProperty] public partial string? ErrorMessage { get; set; }
 
     public CutJob(
         string inputFilePath,
