@@ -15,7 +15,50 @@ public class FfmpegService(string ffmpegPath) : IFfmpegService
 
         Console.WriteLine(BuildCommand(startInfo));
 
-        await Task.Delay(1000, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        using var process = new Process
+        {
+            StartInfo = startInfo
+        };
+
+        if (!process.Start())
+            throw new InvalidOperationException("Failed to start FFmpeg.");
+
+        var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+        var standardErrorTask = process.StandardError.ReadToEndAsync();
+
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch (InvalidOperationException)
+            {
+                // The process exited between cancellation and Kill.
+            }
+
+            await process.WaitForExitAsync();
+            await Task.WhenAll(standardOutputTask, standardErrorTask);
+            throw;
+        }
+
+        await Task.WhenAll(standardOutputTask, standardErrorTask);
+
+        if (process.ExitCode != 0)
+        {
+            var errorOutput = standardErrorTask.Result.Trim();
+            var message = errorOutput.Length == 0
+                ? $"FFmpeg exited with code {process.ExitCode}."
+                : $"FFmpeg exited with code {process.ExitCode}: {errorOutput}";
+
+            throw new InvalidOperationException(message);
+        }
     }
 
     public ProcessStartInfo BuildStartInfo(CutJob job)

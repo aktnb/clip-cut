@@ -22,7 +22,11 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
+#if DEBUG
+        services.AddSingleton<IFfmpegService, DisabledFfmpegService>();
+#else
         services.AddSingleton<IFfmpegService>(_ => new FfmpegService("ffmpeg"));
+#endif
         services.AddSingleton<IJobService, JobService>();
         services.AddTransient<MainWindowViewModel>();
 

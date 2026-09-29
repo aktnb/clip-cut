@@ -31,24 +31,38 @@ public class JobService : IJobService, IAsyncDisposable
     private async Task ProcessJobsAsync(CancellationToken cancellationToken)
     {
         await foreach (var job in _channel.Reader.ReadAllAsync(cancellationToken))
+        {
+            if (job.CancellationTokenSource.IsCancellationRequested)
+            {
+                job.Status = JobStatus.Cancelled;
+                continue;
+            }
+
             await ProcessJobAsync(job, cancellationToken);
+        }
     }
 
     private async Task ProcessJobAsync(
         CutJob job,
         CancellationToken cancellationToken)
     {
+        using var jobCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            job.CancellationTokenSource.Token);
+
+        job.Status = JobStatus.Processing;
+        job.ErrorMessage = null;
+
         try
         {
-            job.Status = JobStatus.Processing;
-            job.ErrorMessage = null;
+            await _ffmpegService.CutAsync(job, jobCancellationTokenSource.Token);
 
-            await _ffmpegService.CutAsync(job, cancellationToken);
-
-            job.Status = JobStatus.Completed;
+            job.Status = jobCancellationTokenSource.IsCancellationRequested
+                ? JobStatus.Cancelled
+                : JobStatus.Completed;
         }
         catch (OperationCanceledException)
-            when (cancellationToken.IsCancellationRequested)
+            when (jobCancellationTokenSource.IsCancellationRequested)
         {
             job.Status = JobStatus.Cancelled;
         }
@@ -62,6 +76,11 @@ public class JobService : IJobService, IAsyncDisposable
     public ValueTask EnqueueAsync(CutJob job, CancellationToken cancellationToken = default)
     {
         return _channel.Writer.WriteAsync(job, cancellationToken);
+    }
+
+    public void RemoveJob(CutJob job)
+    {
+        job.Cancel();
     }
 
     public async ValueTask DisposeAsync()

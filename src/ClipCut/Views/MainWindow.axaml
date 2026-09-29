@@ -51,8 +51,13 @@
 
                             <TextBlock Text="{Binding Status}" />
 
+                            <TextBlock
+                                Text="{Binding ErrorMessage}"
+                                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
                             <Button
-                                Content="Remove"
+                                Content="{Binding RemoveButtonText}"
+                                IsEnabled="{Binding CanRemove}"
                                 Command="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext)?.RemoveJobCommand}"
                                 CommandParameter="{Binding}" />
                         </StackPanel>

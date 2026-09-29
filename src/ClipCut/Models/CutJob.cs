@@ -1,17 +1,43 @@
 using System;
 using System.IO;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ClipCut.Models;
 
 public partial class CutJob : ObservableObject
 {
+    public CancellationTokenSource CancellationTokenSource { get; } = new();
+
+    public JobStatus Status
+    {
+        get => field == JobStatus.Processing && CancellationTokenSource.IsCancellationRequested
+            ? JobStatus.Cancelling
+            : field;
+        set
+        {
+            if (!SetProperty(ref field, value))
+                return;
+
+            OnPropertyChanged(nameof(RemoveButtonText));
+            OnPropertyChanged(nameof(CanRemove));
+        }
+    } = JobStatus.Pending;
+
+    public string RemoveButtonText => Status switch
+    {
+        JobStatus.Processing => "Cancel",
+        JobStatus.Cancelling => "Cancelling…",
+        _ => "Remove"
+    };
+
+    public bool CanRemove => Status != JobStatus.Cancelling;
+
     public string InputFilePath { get; init; }
     public string OutputFilePath { get; init; }
     public TimeSpan? Start { get; init; }
     public TimeSpan? End { get; init; }
 
-    [ObservableProperty] public partial JobStatus Status { get; set; } = JobStatus.Pending;
     [ObservableProperty] public partial string? ErrorMessage { get; set; }
 
     public CutJob(
@@ -46,5 +72,13 @@ public partial class CutJob : ObservableObject
         OutputFilePath = outputFilePath;
         Start = start;
         End = end;
+    }
+
+    public void Cancel()
+    {
+        CancellationTokenSource.Cancel();
+        OnPropertyChanged(nameof(Status));
+        OnPropertyChanged(nameof(RemoveButtonText));
+        OnPropertyChanged(nameof(CanRemove));
     }
 }

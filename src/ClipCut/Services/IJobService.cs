@@ -7,4 +7,5 @@ namespace ClipCut.Services;
 public interface IJobService
 {
     ValueTask EnqueueAsync(CutJob job, CancellationToken cancellationToken = default);
+    void RemoveJob(CutJob job);
 }

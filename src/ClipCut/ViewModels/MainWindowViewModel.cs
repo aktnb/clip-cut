@@ -49,6 +49,15 @@ public partial class MainWindowViewModel(IJobService jobService) : ObservableObj
     [RelayCommand]
     private void RemoveJob(CutJob job)
     {
+        if (job.Status == JobStatus.Cancelling)
+            return;
+
+        var isProcessing = job.Status == JobStatus.Processing;
+        jobService.RemoveJob(job);
+
+        if (isProcessing || job.Status == JobStatus.Cancelling)
+            return;
+
         Jobs.Remove(job);
     }
 
